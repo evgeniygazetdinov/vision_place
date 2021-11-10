@@ -10,6 +10,18 @@ hands = mp_Hands.Hands()
 mpDraw = mp.solutions.drawing_utils
 
 
+class HandDetector:
+    def __init(self, mode=False, max_hands=2,
+               detect_con=0.5, track_con=0.5):
+        self.mode = mode
+        self.max_hands = max_hands
+        self.detect_con = detect_con
+        self.track_Con = track_con
+        self.mp_Draw = mp.solution.drawing_utils
+
+    def find_hands(self, img, draw=True):
+        pass
+
 def hand_tracker(img, cv2):
     """
 
