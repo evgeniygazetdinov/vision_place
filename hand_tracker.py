@@ -29,7 +29,7 @@ def hand_tracker(img, cv2):
                     cv2.putText(img, "THAT IS FOREFINGER",
                                 (50, 100), cv2.FONT_HERSHEY_PLAIN,
                                 3, (255, 0, 255), 3)
-            mpDraw.draw_landmarks(img, handLms, mpHands.HAND_CONNECTIONS)
+            mpDraw.draw_landmarks(img, handLms, self.mp_Hands.HAND_CONNECTIONS)
 
 
 def main_runner():
