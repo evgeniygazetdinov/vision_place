@@ -6,6 +6,9 @@ import sys
 
 
 class HandDetector:
+    """
+    hand detector as module
+    """
     def __init__(self, mode=False, max_hands=2, complexity=1,
                  detect_con=0.5, track_con=0.5):
         self.mode = mode
@@ -37,27 +40,18 @@ class HandDetector:
 
     def find_position(self, img, hand_number=0, draw=True):
         lm_list = []
-
-        for hand_id, lm in enumerate(
-                handLms.landmark):
-            h, w, c = img.shape
-            cx, cy = int(lm.x * w), int(lm.y * h)
-            print(id, cx, cy)
-            if hand_id == 8 and (cy == 254 or cy > 363):
-                cv2.putText(img, "THAT IS FOREFINGER",
-                            (50, 100), cv2.FONT_HERSHEY_PLAIN,
-                            3, (255, 0, 255), 3)
+        if self.results.multi_hand_landmarks:
+            my_hand = self.results.multi_hand_landmarks[hand_number]
+            for hand_id, lm in enumerate(my_hand.landmark):
+                h, w, c = img.shape
+                cx, cy = int(lm.x * w), int(lm.y * h)
+                lm_list.append([hand_id, cx, cy])
+                if draw:
+                    if hand_id == 8 and (cy == 254 or cy > 363):
+                        cv2.putText(img, "THAT IS FOREFINGER",
+                                    (50, 100), cv2.FONT_HERSHEY_PLAIN,
+                                    3, (255, 0, 255), 3)
         return lm_list
-
-def hand_tracker(img, cv2):
-    """
-
-    :param img:
-    :param cv2:
-    :return:
-    """
-
-
 
 
 def main_runner():
@@ -74,6 +68,9 @@ def main_runner():
             success, img = cap.read()
             # send image into detector
             img = detector.find_hands(img)
+            lm_list = detector.find_position(img)
+            if len(lm_list) != 0:
+                print(lm_list[4])
             cTime = time.time()
             fps = 1/(cTime - pTime)
             pTime = cTime
