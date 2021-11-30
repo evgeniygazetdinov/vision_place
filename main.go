@@ -1,21 +1,59 @@
 package main 
-import (serv "lib"
-		"fmt")
+import (
+	"log"
+	"time"
+	"os"
+	"os/signal"
+	"syscall"
+	httpserver "github.com/beanbee/httpserver-go"
+)
+
+const PORT = 3005; 
 
 
 
-func main(){
-	server := serv.Init("127.0.0.1:0")
-	if err := server.Start(); err != nil {
-		fmt.Println(err)
+func main() {
+	// create new http server with max async 20 goroutine 
+	log.Printf("*****SERVER RUNNNING ON %d************", PORT)
+	server := httpserver.NewServer("mytest", PORT).SetAsyncNum(20)
+
+	// handler sync http request
+	server.HandlerRequst("POST", "/sync", syncDemo)
+
+	// handler async http request
+	server.HandlerAsyncRequst("POST", "/async", asyncDemo)
+	
+	go func(){
+		if err := server.Start(); err != nil {
+			log.Printf("server failed: %v", err)
+	    	}
+	}()
+
+	// you can stop server using Stop() method which could await completion for all requests
+	// finishing off some extra-works by a system signal is recommended
+	EndChannel := make(chan os.Signal)
+	signal.Notify(EndChannel, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	select {
+	case output := <-EndChannel:
+		log.Printf("end http server process by: %s", output)
+		server.Stop()
 	}
-	// fmt.Println("here")
-	// url := "http://" + server.Addr
-	// if _, err := http.Get(url); err != nil {
-	// 	fmt.Println(err)
-	// }
-	// if _, err := http.Get(url); err == nil {
-	// 	fmt.Println("error expected")
-	// }
+	close(EndChannel)
+}
 
+// simple handler for sync request
+// get response data immediately
+func syncDemo(jsonIn []byte) (jsonOut []byte, err error) {
+	log.Printf("[syncDemo] jsonIn: %v", string(jsonIn[:]))
+
+	return jsonIn, nil
+}
+
+// simple handler for async request
+// return task info in response data when performing request handler asynchronously
+func asyncDemo(jsonIn []byte) (err error) {
+	time.Sleep(1 * time.Second)
+	log.Printf("[asyncDemo] jsonIn: %v", string(jsonIn[:]))
+
+	return nil
 }
