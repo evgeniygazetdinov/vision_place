@@ -21,8 +21,8 @@ func main() {
 	server.HandlerRequst("POST", "/sync", syncDemo)
 
 	// handler async http request
-	server.HandlerAsyncRequst("POST", "/async", asyncDemo)
-	
+	server.HandlerAsyncRequst("GET", "/", asyncDemo)
+
 	go func(){
 		if err := server.Start(); err != nil {
 			log.Printf("server failed: %v", err)
@@ -53,7 +53,8 @@ func syncDemo(jsonIn []byte) (jsonOut []byte, err error) {
 // return task info in response data when performing request handler asynchronously
 func asyncDemo(jsonIn []byte) (err error) {
 	time.Sleep(1 * time.Second)
-	log.Printf("[asyncDemo] jsonIn: %v", string(jsonIn[:]))
-
+	// log.Printf("[asyncDemo] jsonIn: %v", string(jsonIn[:]))
+	log.Printf("%v", string(jsonIn[:]))
 	return nil
 }
+// TODO add  return camera view
