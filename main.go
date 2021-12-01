@@ -1,60 +1,93 @@
-package main 
+// package main 
+// import (
+// 	"log"
+// 	"time"
+// 	"os"
+// 	"os/signal"
+// 	"syscall"
+// 	httpserver "github.com/beanbee/httpserver-go"
+// )
+
+// const PORT = 3005; 
+
+
+
+// func main() {
+// 	// create new http server with max async 20 goroutine 
+// 	log.Printf("*****SERVER RUNNNING ON %d************", PORT)
+// 	server := httpserver.NewServer("mytest", PORT).SetAsyncNum(20)
+
+// 	// handler sync http request
+// 	server.HandlerRequst("POST", "/sync", syncDemo)
+
+// 	// handler async http request
+// 	server.HandlerAsyncRequst("GET", "/", asyncDemo)
+
+// 	go func(){
+// 		if err := server.Start(); err != nil {
+// 			log.Printf("server failed: %v", err)
+// 	    	}
+// 	}()
+
+// 	// you can stop server using Stop() method which could await completion for all requests
+// 	// finishing off some extra-works by a system signal is recommended
+// 	EndChannel := make(chan os.Signal)
+// 	signal.Notify(EndChannel, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+// 	select {
+// 	case output := <-EndChannel:
+// 		log.Printf("end http server process by: %s", output)
+// 		server.Stop()
+// 	}
+// 	close(EndChannel)
+// }
+
+// // simple handler for sync request
+// // get response data immediately
+// func syncDemo(jsonIn []byte) (jsonOut []byte, err error) {
+// 	log.Printf("[syncDemo] jsonIn: %v", string(jsonIn[:]))
+
+// 	return jsonIn, nil
+// }
+
+// // simple handler for async request
+// // return task info in response data when performing request handler asynchronously
+// func asyncDemo(jsonIn []byte) (err error) {
+// 	time.Sleep(1 * time.Second)
+// 	// log.Printf("[asyncDemo] jsonIn: %v", string(jsonIn[:]))
+// 	log.Printf("%v", string(jsonIn[:]))
+// 	return nil
+// }
+// // TODO add  return camera view
+
+package main
+
 import (
-	"log"
-	"time"
-	"os"
-	"os/signal"
-	"syscall"
-	httpserver "github.com/beanbee/httpserver-go"
+    "html/template"
+    "net/http"
+    "path"
 )
 
-const PORT = 3005; 
-
-
+type Book struct {
+    Title  string
+    Author string
+}
 
 func main() {
-	// create new http server with max async 20 goroutine 
-	log.Printf("*****SERVER RUNNNING ON %d************", PORT)
-	server := httpserver.NewServer("mytest", PORT).SetAsyncNum(20)
-
-	// handler sync http request
-	server.HandlerRequst("POST", "/sync", syncDemo)
-
-	// handler async http request
-	server.HandlerAsyncRequst("GET", "/", asyncDemo)
-
-	go func(){
-		if err := server.Start(); err != nil {
-			log.Printf("server failed: %v", err)
-	    	}
-	}()
-
-	// you can stop server using Stop() method which could await completion for all requests
-	// finishing off some extra-works by a system signal is recommended
-	EndChannel := make(chan os.Signal)
-	signal.Notify(EndChannel, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
-	select {
-	case output := <-EndChannel:
-		log.Printf("end http server process by: %s", output)
-		server.Stop()
-	}
-	close(EndChannel)
+    http.HandleFunc("/", ShowBooks)
+    http.ListenAndServe(":8082", nil)
 }
 
-// simple handler for sync request
-// get response data immediately
-func syncDemo(jsonIn []byte) (jsonOut []byte, err error) {
-	log.Printf("[syncDemo] jsonIn: %v", string(jsonIn[:]))
+func ShowBooks(w http.ResponseWriter, r *http.Request) {
+    book := Book{"Building Web Apps with Go", "Jeremy Saenz"}
 
-	return jsonIn, nil
-}
+    fp := path.Join("templates", "index.html")
+    tmpl, err := template.ParseFiles(fp)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-// simple handler for async request
-// return task info in response data when performing request handler asynchronously
-func asyncDemo(jsonIn []byte) (err error) {
-	time.Sleep(1 * time.Second)
-	// log.Printf("[asyncDemo] jsonIn: %v", string(jsonIn[:]))
-	log.Printf("%v", string(jsonIn[:]))
-	return nil
+    if err := tmpl.Execute(w, book); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
 }
-// TODO add  return camera view
