@@ -1,43 +1,24 @@
-<html>
-  <h1>{{ .Title }}</h1>
-  <!--<h3>by {{ .Author }}</h3>-->
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+    <title>Live Streaming Demonstration</title>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8  offset-lg-2">
+            <h3 class="mt-5">Live Streaming</h3>
+            <img src="{{ url_for('video_feed') }}" width="100%">
+        </div>
+    </div>
+</div>
+</body>
 </html>
-<video id="video" width="320" height="240" autoplay style="background-color: grey"></video>
-<canvas id="canvas" width="320" height="240" style="background-color: grey; display: none;"></canvas>
-<img id="image" src="" width="320" height="240" style="background-color: grey; display: none;"></img>
-
-<script>
-
-// Elements for taking the snapshot
-var video = document.getElementById('video');
-
-// Element to display snapshot
-
-    // you need canvas to get image. canvas can be hidden using `createElement("canvas")`
-    // var canvas = document.createElement("canvas");
-   
-var canvas = document.getElementById('canvas');
-var context = canvas.getContext('2d');
-
-var image = document.getElementById('image');
-var image64 = document.getElementById('image64');
-
-// Get access to the camera!
-if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    // Not adding `{ audio: true }` since we only want video now
-    navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-        //video.src = window.URL.createObjectURL(stream);
-        video.srcObject = stream;
-        video.play();
-    
-        //console.log('setInterval')
-        window.setInterval(function() {
-            //context.drawImage(video, 0, 0);
-            context.drawImage(video, 0, 0, 320, 240); // better use size because camera may gives data in different size then <video> is displaying
-            
-            image64.src = canvas.toDataURL();  
-            canvas.toBlob(upload, "image/jpeg");
-        }, 100);    
-    });
-}    
-</script>
