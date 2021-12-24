@@ -1,93 +1,81 @@
-// package main 
-// import (
-// 	"log"
-// 	"time"
-// 	"os"
-// 	"os/signal"
-// 	"syscall"
-// 	httpserver "github.com/beanbee/httpserver-go"
-// )
-
-// const PORT = 3005; 
-
-
-
-// func main() {
-// 	// create new http server with max async 20 goroutine 
-// 	log.Printf("*****SERVER RUNNNING ON %d************", PORT)
-// 	server := httpserver.NewServer("mytest", PORT).SetAsyncNum(20)
-
-// 	// handler sync http request
-// 	server.HandlerRequst("POST", "/sync", syncDemo)
-
-// 	// handler async http request
-// 	server.HandlerAsyncRequst("GET", "/", asyncDemo)
-
-// 	go func(){
-// 		if err := server.Start(); err != nil {
-// 			log.Printf("server failed: %v", err)
-// 	    	}
-// 	}()
-
-// 	// you can stop server using Stop() method which could await completion for all requests
-// 	// finishing off some extra-works by a system signal is recommended
-// 	EndChannel := make(chan os.Signal)
-// 	signal.Notify(EndChannel, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
-// 	select {
-// 	case output := <-EndChannel:
-// 		log.Printf("end http server process by: %s", output)
-// 		server.Stop()
-// 	}
-// 	close(EndChannel)
-// }
-
-// // simple handler for sync request
-// // get response data immediately
-// func syncDemo(jsonIn []byte) (jsonOut []byte, err error) {
-// 	log.Printf("[syncDemo] jsonIn: %v", string(jsonIn[:]))
-
-// 	return jsonIn, nil
-// }
-
-// // simple handler for async request
-// // return task info in response data when performing request handler asynchronously
-// func asyncDemo(jsonIn []byte) (err error) {
-// 	time.Sleep(1 * time.Second)
-// 	// log.Printf("[asyncDemo] jsonIn: %v", string(jsonIn[:]))
-// 	log.Printf("%v", string(jsonIn[:]))
-// 	return nil
-// }
-// // TODO add  return camera view
-
 package main
 
 import (
-    "html/template"
-    "net/http"
-    "path"
+    "fmt"
+    "image"
+    "image/color"
+    "os"
+    "strconv"
+
+    "gocv.io/x/gocv"
 )
 
-type Book struct {
-    Title  string
-    Author string
-}
-
 func main() {
-    http.HandleFunc("/", ShowBooks)
-    http.ListenAndServe(":8082", nil)
-}
-
-func ShowBooks(w http.ResponseWriter, r *http.Request) {
-    book := Book{"Building Web Apps with Go", "Jeremy Saenz"}
-
-    fp := path.Join("templates", "index.html")
-    tmpl, err := template.ParseFiles(fp)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+    if len(os.Args) < 3 {
+        fmt.Println("How to run:\n\tfacedetect [camera ID] [classifier XML file]")
         return
     }
 
-    if err := tmpl.Execute(w, book); err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+    // parse args
+    deviceID, _ := strconv.Atoi(os.Args[1])
+    xmlFile := os.Args[2]
+
+    // open webcam
+    webcam, err := gocv.VideoCaptureDevice(int(deviceID))
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    defer webcam.Close()
+
+    // open display window
+    window := gocv.NewWindow("Face Detect")
+    defer window.Close()
+
+    // prepare image matrix
+    img := gocv.NewMat()
+    defer img.Close()
+
+    // color for the rect when faces detected
+    blue := color.RGBA{0, 0, 255, 0}
+
+    // load classifier to recognize faces
+    classifier := gocv.NewCascadeClassifier()
+    defer classifier.Close()
+
+    if !classifier.Load(xmlFile) {
+        fmt.Printf("Error reading cascade file: %v\n", xmlFile)
+        return
+    }
+
+    fmt.Printf("start reading camera device: %v\n", deviceID)
+    for {
+        if ok := webcam.Read(&img); !ok {
+            fmt.Printf("cannot read device %d\n", deviceID)
+            return
+        }
+        if img.Empty() {
+            continue
+        }
+
+        // detect faces
+        rects := classifier.DetectMultiScale(img)
+        fmt.Printf("found %d faces\n", len(rects))
+
+        // draw a rectangle around each face on the original image,
+        // along with text identifying as "Human"
+        for _, r := range rects {
+            gocv.Rectangle(&img, r, blue, 3)
+
+            size := gocv.GetTextSize("Human", gocv.FontHersheyPlain, 1.2, 2)
+            pt := image.Pt(r.Min.X+(r.Min.X/2)-(size.X/2), r.Min.Y-2)
+            gocv.PutText(&img, "Human", pt, gocv.FontHersheyPlain, 1.2, blue, 2)
+        }
+
+        // show the image in the window, and wait 1 millisecond
+        window.IMShow(img)
+        if window.WaitKey(1) >= 0 {
+            break
+        }
     }
 }
